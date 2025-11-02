@@ -205,3 +205,16 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project-specific: Word embedding models (large files)
+data/models/
+*.bin
+*.bin.gz
+*.vec
+*.txt.gz
+
+# Project-specific: Generated outputs
+output/*
+!output/.gitkeep
+figures/*
+!figures/.gitkeep
