@@ -8,6 +8,8 @@ word embedding models, examining vector arithmetic behavior.
 
 import numpy as np
 from scipy.spatial.distance import cosine
+import pandas as pd
+from pathlib import Path
 
 
 def test_analogy(model, word_a, word_b, word_c, target_word, top_n=10, search_space=50000):
@@ -96,38 +98,89 @@ def test_analogy(model, word_a, word_b, word_c, target_word, top_n=10, search_sp
         print(f"Error: Word not found in vocabulary: {e}")
         return None, None
 
+# ORIGINAL FUNCTION. SEE REPLACED VERSION BELOW
+# def run_analogy_test_suite(model, test_cases=None):
+#     """
+#     Run multiple analogy tests to examine vector arithmetic behavior.
+    
+#     Args:
+#         model: Word embedding model (KeyedVectors)
+#         test_cases: List of tuples (word_a, word_b, word_c, target_word).
+#                    If None, uses default test cases.
+                   
+#     Returns:
+#         dict: Results for each test case with neighbors and target rank
+#     """
+    
+#     '''
+#     if test_cases is None:
+#         # Default test cases
+#         test_cases = [
+#             ("man", "woman", "king", "queen"),
+#             ("man", "woman", "computer_programmer", "homemaker"),
+#             ("Paris", "London", "France", "England"),
+#             ("walking", "walked", "swimming", "swam"),
+#             ("good", "better", "bad", "worse"),
+#             ("Tokyo", "Japan", "Paris", "France"),
+#             ("big", "bigger", "small", "smaller"),
+#             ("Athens", "Greece", "Berlin", "Germany"),
+#         ]
+#     '''
+#     csv_path = Path(__file__).parent.parent / "data" / "analogies.csv"
+#     df = pd.read_csv(csv_path, header=None)
+    
+#     test_cases = [tuple(row) for row in df.to_numpy()]
 
-def run_analogy_test_suite(model, test_cases=None):
+            
+#     results = {}
+    
+#     print("\n" + "="*70)
+#     print("RUNNING ANALOGY TEST SUITE")
+#     print("="*70)
+    
+#     for word_a, word_b, word_c, target in test_cases:
+#         neighbors, rank = test_analogy(model, word_a, word_b, word_c, target)
+#         results[f"{word_a}:{word_b}::{word_c}:{target}"] = {
+#             'neighbors': neighbors,
+#             'target_rank': rank,
+#             'test_case': (word_a, word_b, word_c, target)
+#         }
+#         print("-" * 70)
+    
+#     return results
+
+def run_analogy_test_suite(model):
     """
     Run multiple analogy tests to examine vector arithmetic behavior.
-    
-    Args:
-        model: Word embedding model (KeyedVectors)
-        test_cases: List of tuples (word_a, word_b, word_c, target_word).
-                   If None, uses default test cases.
-                   
-    Returns:
-        dict: Results for each test case with neighbors and target rank
+
+    Always loads test cases from data/analogies.csv (expects a header).
+    If the CSV has more than 4 columns (e.g. a category column), the first
+    four columns are used as the analogy tuple: (word_a, word_b, word_c, target).
     """
-    if test_cases is None:
-        # Default test cases
-        test_cases = [
-            ("man", "woman", "king", "queen"),
-            ("man", "woman", "computer_programmer", "homemaker"),
-            ("Paris", "London", "France", "England"),
-            ("walking", "walked", "swimming", "swam"),
-            ("good", "better", "bad", "worse"),
-            ("Tokyo", "Japan", "Paris", "France"),
-            ("big", "bigger", "small", "smaller"),
-            ("Athens", "Greece", "Berlin", "Germany"),
-        ]
-    
+    csv_path = Path(__file__).parent.parent / "data" / "analogies.csv"
+
+    # Read CSV (header row present in your file)
+    df = pd.read_csv(csv_path, header=0, dtype=str).fillna("")
+
+    # Drop rows that are completely empty (just in case)
+    df = df.dropna(how="all")
+
+    # If there are extra columns (like 'category'), keep only the first 4
+    if df.shape[1] > 4:
+        print(f"Note: {csv_path.name} has {df.shape[1]} columns — using the first 4 columns as (word1,word2,word3,word4).")
+        df = df.iloc[:, :4]
+
+    # Strip whitespace from every cell and convert to list of 4-tuples
+    #df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    test_cases = [tuple(row) for row in df.values.tolist()]
+    print(f"Loaded {len(test_cases)} test case(s) from {csv_path}")
+
     results = {}
-    
+
     print("\n" + "="*70)
     print("RUNNING ANALOGY TEST SUITE")
     print("="*70)
-    
+
     for word_a, word_b, word_c, target in test_cases:
         neighbors, rank = test_analogy(model, word_a, word_b, word_c, target)
         results[f"{word_a}:{word_b}::{word_c}:{target}"] = {
@@ -136,8 +189,9 @@ def run_analogy_test_suite(model, test_cases=None):
             'test_case': (word_a, word_b, word_c, target)
         }
         print("-" * 70)
-    
+
     return results
+
 
 
 def print_test_summary(results):
